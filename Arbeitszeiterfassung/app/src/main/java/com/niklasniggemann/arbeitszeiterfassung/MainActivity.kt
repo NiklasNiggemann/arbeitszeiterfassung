@@ -20,12 +20,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.niklasniggemann.arbeitszeiterfassung.ui.theme.ArbeitszeiterfassungTheme
 import kotlinx.coroutines.delay
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.firestore.ktx.firestore
 
 // Main Activity
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge() // Enables edge-to-edge content
+        enableEdgeToEdge()
+        Firebase.firestore
         setContent {
             ArbeitszeiterfassungTheme {
                 MainScreen()
@@ -42,6 +45,9 @@ fun MainScreen() {
     }
 }
 
+// Firestore Reference
+val db = Firebase.firestore
+
 // Main Content Composable
 @Composable
 fun Content(modifier: Modifier) {
@@ -49,14 +55,14 @@ fun Content(modifier: Modifier) {
     var isSignatureEnabled by remember { mutableStateOf(false) }
     var startTime by remember { mutableStateOf<Long?>(null) }
     var elapsedTime by remember { mutableLongStateOf(0L) }
-    var pausedTime by remember { mutableLongStateOf(0L) } // Keeps track of the total elapsed time before pause
+    var pausedTime by remember { mutableLongStateOf(0L) }
     val employeeName = "John Doe"
     val signaturePoints = remember { mutableStateListOf<Offset>() }
 
     // Handles time tracking logic
     LaunchedEffect(isTracking) {
         if (isTracking) {
-            startTime = System.currentTimeMillis() // Update start time to current time on resume
+            startTime = System.currentTimeMillis()
             while (isTracking) {
                 elapsedTime = pausedTime + (System.currentTimeMillis() - (startTime ?: 0L))
                 delay(1000)
@@ -86,13 +92,13 @@ fun Content(modifier: Modifier) {
                 StopErfassung {
                     isTracking = false
                     isSignatureEnabled = true
-                    pausedTime = elapsedTime // Preserve the elapsed time when stopped
+                    pausedTime = elapsedTime
                 }
             } else {
                 StartErfassung {
                     isTracking = true
                     isSignatureEnabled = false
-                    startTime = System.currentTimeMillis() // Capture resume start time
+                    startTime = System.currentTimeMillis()
                 }
             }
 
@@ -106,19 +112,52 @@ fun Content(modifier: Modifier) {
             // Submit Button
             if (isSignatureEnabled) {
                 SubmitButton {
-                    // Reset signature and timer
+                    submitToFirestore(
+                        employeeName = employeeName,
+                        elapsedTime = elapsedTime,
+                        signaturePresent = signaturePoints.isNotEmpty()
+                    )
+                    // Reset fields
                     signaturePoints.clear()
                     elapsedTime = 0L
                     pausedTime = 0L
                     startTime = null
                     isSignatureEnabled = false
-                    println("Form submitted!")
                 }
             }
         }
     }
 }
 
+// Function to Submit Data to Firestore
+fun submitToFirestore(employeeName: String, elapsedTime: Long, signaturePresent: Boolean) {
+    val timeData = mapOf(
+        "employeeName" to employeeName,
+        "trackedTime" to formatElapsedTime(elapsedTime),
+        "signaturePresent" to signaturePresent,
+        "timestamp" to System.currentTimeMillis()
+    )
+
+    db.collection("arbeitszeiten")
+        .add(timeData)
+        .addOnSuccessListener {
+            println("Document successfully written with ID: ${it.id}")
+        }
+        .addOnFailureListener { e ->
+            println("Error adding document: $e")
+        }
+}
+
+// Submit Button Composable
+@Composable
+fun SubmitButton(onClick: () -> Unit) {
+    Button(
+        onClick = { onClick() },
+        modifier = Modifier.padding(16.dp)
+    ) {
+        Text("Submit")
+    }
+}
 
 // Employee Info Composable
 @Composable
@@ -190,17 +229,6 @@ fun StartErfassung(onClick: () -> Unit) {
 fun StopErfassung(onClick: () -> Unit) {
     Button(onClick = { onClick() }) {
         Text("Stop")
-    }
-}
-
-// Submit Button Composable
-@Composable
-fun SubmitButton(onClick: () -> Unit) {
-    Button(
-        onClick = { onClick() },
-        modifier = Modifier.padding(16.dp)
-    ) {
-        Text("Submit")
     }
 }
 

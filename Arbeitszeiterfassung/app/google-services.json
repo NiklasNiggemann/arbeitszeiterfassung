@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "253241376008",
+    "project_id": "arbeitszeiterfassung-279a1",
+    "storage_bucket": "arbeitszeiterfassung-279a1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:253241376008:android:d87cf3ef683670129b80bd",
+        "android_client_info": {
+          "package_name": "com.niklasniggemann.arbeitszeiterfassung"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBm_OKt5Fs8uAGpfLZdV423sitjoogw9jQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
